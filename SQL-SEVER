@@ -30,7 +30,7 @@ ORDER BY UnitPrice
 
 SELECT 
 	MAX(UnitPrice) AS MAXPrice,
-	MIN(UnitPrice) AS MINPrice,
+	MIN(UnitPrice) AS MINPrice,--可以不寫
 	MAX(UnitPrice) - MIN(UnitPrice) AS Spread
 FROM Products p
 	LEFT JOIN Categories c ON p.CategoryID = c.CategoryID
@@ -42,55 +42,155 @@ WHERE c.CategoryID IN(
 )
 
 -- 4.找出沒有訂過任何商品的客戶所在的城市的所有客戶
+
 SELECT
-	c.CustomerID,c.City
-FROM Customers c
-LEFT JOIN 
+	*
+FROM Customers
+WHERE City IN (
+	SELECT
+		c.City
+	FROM  Customers c
+	LEFT JOIN Orders o ON o.CustomerID = c.CustomerID
+	WHERE o.OrderID IS Null
+)
 
 -- 5.找出第 5 貴跟第 8 便宜的產品的產品類別
 
 SELECT
-	ProductName,UnitPrice,CategoryID
-FROM Products
-ORDER BY UnitPrice DESC
-OFFSET 4 ROWS
-FETCH NEXT 1 ROWS ONLY
-
-SELECT
-	CategoryName
-FROM Categories
-WHERE CategoryID = 4
-
-SELECT
-	ProductName,UnitPrice,CategoryID
-FROM Products
-ORDER BY UnitPrice 
-OFFSET 7 ROWS
-FETCH NEXT 1 ROWS ONLY
-
-SELECT
-	CategoryName
-FROM Categories
-WHERE CategoryID = 1
-
+	c.CategoryName,
+	p.ProductName,p.UnitPrice,p.CategoryID
+FROM Categories c
+LEFT JOIN Products p ON p.CategoryID = c.CategoryID
+WHERE p.ProductID IN (
+(
+	SELECT
+		p.ProductID
+	FROM Products p
+	ORDER BY UnitPrice DESC
+	OFFSET 4 ROWS
+	FETCH NEXT 1 ROWS ONLY
+),
+(
+	SELECT
+		p.ProductID
+	FROM Products p
+	ORDER BY UnitPrice DESC
+	OFFSET 7 ROWS
+	FETCH NEXT 1 ROWS ONLY
+)
+)
+	
 -- 6.找出誰買過第 5 貴跟第 8 便宜的產品
+
+SELECT
+	o.OrderID,o.CustomerID,o.EmployeeID
+FROM Orders o
+LEFT JOIN [Order Details] od ON od.OrderID = o.OrderID
+LEFT JOIN Products p ON p.ProductID = od.ProductID
+LEFT JOIN Customers c ON c.CustomerID = o.CustomerID
+WHERE p.ProductID IN (
+(
+	SELECT
+		p.ProductID
+	FROM Products p
+	ORDER BY UnitPrice DESC
+	OFFSET 4 ROWS
+	FETCH NEXT 1 ROWS ONLY
+),
+(
+	SELECT
+		p.ProductID
+	FROM Products p
+	ORDER BY UnitPrice DESC
+	OFFSET 7 ROWS
+	FETCH NEXT 1 ROWS ONLY
+)
+)
 
 -- 7.找出誰賣過第 5 貴跟第 8 便宜的產品
 
+SELECT
+	e.EmployeeID,e.LastName,e.FirstName,
+	p.CategoryID
+FROM Employees e
+LEFT JOIN Orders o ON e.EmployeeID = o.EmployeeID
+LEFT JOIN [Order Details] od ON o.OrderID = od.OrderID
+LEFT JOIN Products p ON od.ProductID = p.ProductID
+WHERE p.ProductID IN (
+(	SELECT
+		p.ProductID
+	FROM Products p
+	ORDER BY UnitPrice DESC
+	OFFSET 4 ROWS
+	FETCH NEXT 1 ROWS ONLY
+),
+(
+	SELECT
+		p.ProductID
+	FROM Products p
+	ORDER BY UnitPrice DESC
+	OFFSET 7 ROWS
+	FETCH NEXT 1 ROWS ONLY
+)
+)
+
 -- 8.找出 13 號星期五的訂單 (惡魔的訂單)
+
+SELECT 
+	*
+FROM Orders
+WHERE DATEPART(DAY,OrderDate)=13 AND DATEPART(WEEKDAY,OrderDate)=6
 
 -- 9.找出誰訂了惡魔的訂單
 
+SELECT
+	c.CustomerID,c.CompanyName,
+	o.OrderDate
+FROM Customers c
+LEFT JOIN Orders o ON o.CustomerID = c.CustomerID
+WHERE DATEPART(DAY,OrderDate) = 13 AND DATEPART(WEEKDAY,OrderDate) = 6
+
 -- 10.找出惡魔的訂單裡有什麼產品
+
+SELECT
+	p.ProductID,p.ProductName,
+	o.OrderDate
+FROM Products p
+LEFT JOIN [Order Details] od ON p.ProductID = od.ProductID
+LEFT JOIN Orders o ON od.OrderID = o.OrderID
+WHERE DATEPART(DAY,OrderDate) = 13 AND DATEPART(WEEKDAY,OrderDate) = 6
+ORDER BY p.ProductID
 
 -- 11.列出從來沒有打折 (Discount) 出售的產品
 
+SELECT DISTINCT
+	od.OrderID,
+	p.ProductID,p.ProductName,
+	od.Discount
+FROM [Order Details] od
+LEFT JOIN Products p ON od.ProductID = p.ProductID
+WHERE od.Discount = 0
+
 -- 12.列出購買非本國的產品的客戶
+
+SELECT DISTINCT
+	c.CustomerID,c.CompanyName,c.Country
+FROM Customers c
+LEFT JOIN Orders o ON c.CustomerID = o.CustomerID
+LEFT JOIN [Order Details] od ON o.OrderID = od.OrderID
+LEFT JOIN Products p ON od.ProductID = p.ProductID
+LEFT JOIN Suppliers s ON p.SupplierID = s.SupplierID
+WHERE c.Country <> s.Country
 
 -- 13.列出在同個城市中有公司員工可以服務的客戶
 
+
 -- 14.列出那些產品沒有人買過
 
+SELECT
+	p.ProductID,p.ProductName,p.
+FROM Products p
+LEFT JOIN 
 ----------------------------------------------------------------------------------------
 
 -- 15.列出所有在每個月月底的訂單
@@ -152,4 +252,3 @@ ORDER BY SalesAmout DESC
 -- 35.按照城市分類，找出每一個城市最近一筆訂單的送貨時間
 
 -- 36.列出購買金額第五名與第十名的客戶，以及兩個客戶的金額差距
-
