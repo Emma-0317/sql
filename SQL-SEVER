@@ -188,16 +188,51 @@ WHERE c.Country <> s.Country
 -- 14.列出那些產品沒有人買過
 
 SELECT
-	p.ProductID,p.ProductName,p.
+	p.ProductID,p.ProductName,
+	od.Quantity
 FROM Products p
-LEFT JOIN 
+LEFT JOIN [Order Details] od ON p.ProductID = od.ProductID
+WHERE od.Quantity LIKE 0
+
 ----------------------------------------------------------------------------------------
 
 -- 15.列出所有在每個月月底的訂單
 
+SELECT
+	o.OrderID,o.CustomerID,o.OrderDate
+FROM Orders o
+WHERE o.OrderDate = EOMONTH(o.OrderDate)
+
 -- 16.列出每個月月底售出的產品
 
+SELECT
+	p.ProductID,p.ProductName,
+	od.Quantity,od.UnitPrice,
+	o.OrderID,OrderDate
+FROM Products p
+LEFT JOIN [Order Details] od ON p.ProductID = od.ProductID
+LEFT JOIN Orders o ON od.OrderID = o.OrderID
+WHERE o.OrderDate = EOMONTH(o.OrderDate)
+ORDER BY p.ProductID
+
 -- 17.找出有敗過最貴的三個產品中的任何一個的前三個大客戶
+
+SELECT TOP 3
+	c.CustomerID,c.CompanyName,
+	p.UnitPrice,
+	SUM(od.UnitPrice * od.Quantity * (1-od.Discount))AS SalesAmout
+FROM Customers c
+LEFT JOIN Orders o ON c.CustomerID = o.CustomerID
+LEFT JOIN [Order Details] od ON o.OrderID = od.OrderID
+LEFT JOIN Products p ON od.ProductID = p.ProductID
+WHERE p.UnitPrice IN (
+	SELECT TOP 3
+		p.UnitPrice
+	FROM Products p
+	ORDER BY p.UnitPrice DESC
+)
+GROUP BY c.CustomerID,c.CompanyName,p.UnitPrice
+ORDER BY SalesAmout DESC
 
 -- 18.找出有敗過銷售金額前三高個產品的前三個大客戶
 
@@ -218,6 +253,7 @@ GROUP BY c.CustomerID,c.CompanyName
 ORDER BY SalesAmout DESC
 
 -- 19.找出有敗過銷售金額前三高個產品所屬類別的前三個大客戶
+
 
 -- 20.列出消費總金額高於所有客戶平均消費總金額的客戶的名字，以及客戶的消費總金額
 
@@ -252,3 +288,4 @@ ORDER BY SalesAmout DESC
 -- 35.按照城市分類，找出每一個城市最近一筆訂單的送貨時間
 
 -- 36.列出購買金額第五名與第十名的客戶，以及兩個客戶的金額差距
+
